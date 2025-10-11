@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Oceanic - InSight Mars Weather</title>
+
+  <!-- Enlaza el CSS -->
+  <link rel="stylesheet" href="/frontend/public/css/style.css" />
+</head>
+<body>
+  <main class="container" role="main">
+    <header class="header">
+      <h1 class="title">InSight — Datos meteorológicos de Marte</h1>
+      <p class="subtitle">Consume la API de la NASA, guarda en la base de datos y pregunta a la IA sobre los registros.</p>
+    </header>
+
+    <section class="controls" aria-label="Controles principales">
+      <button id="btnFetch" class="btn primary" title="Descargar datos desde la NASA">1. Descargar y guardar</button>
+      <button id="btnLoad" class="btn" title="Cargar datos guardados">2. Cargar datos guardados</button>
+      <button id="btnClear" class="btn ghost" title="Limpiar vista">Limpiar vista</button>
+    </section>
+
+    <section class="panel" aria-labelledby="datos-heading">
+      <h2 id="datos-heading">Datos guardados</h2>
+      <div id="dataArea" class="data-area" aria-live="polite">No hay datos cargados.</div>
+    </section>
+
+    <section class="panel" aria-labelledby="pregunta-heading">
+      <h2 id="pregunta-heading">Pregunta a la IA</h2>
+      <form id="askForm" class="ask-form" aria-label="Formulario para preguntar a la IA">
+        <label for="question" class="sr-only">Pregunta</label>
+        <textarea id="question" rows="3" placeholder="Ej: ¿Cuál fue la temperatura máxima registrada?" required></textarea>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Preguntar</button>
+          <button type="button" id="btnExample" class="btn">Ejemplo</button>
+        </div>
+      </form>
+      <div id="answerArea" class="answer-area" aria-live="polite"></div>
+    </section>
+
+    <footer class="footer">
+      <small>Backend: Node.js + SQLite • No subas tu <code>.env</code> al repositorio.</small>
+    </footer>
+  </main>
+
+  <!-- Enlaza el JS (vendrá después) -->
+  <script src="app.js" defer></script>
+</body>
+</html>
