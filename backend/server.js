@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const fetch = require('node-fetch');
 const cors = require('cors');
-const pool = require('./db');
+const pool = require('../db');
 const { OpenAIApi, Configuration } = require('openai');
 
 const app = express();
