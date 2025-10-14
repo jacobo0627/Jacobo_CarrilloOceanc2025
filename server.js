@@ -14,14 +14,17 @@ const PORT = process.env.PORT || 3000;
 const NASA_KEY = process.env.NASA_API_KEY || 'DEMO_KEY';
 const OPENAI_KEY = process.env.OPENAI_API_KEY || null;
 
-// Configurar OpenAI si hay API Key
+// Configurar OpenAI solo si hay clave
 let openai = null;
 if (OPENAI_KEY) {
   const config = new Configuration({ apiKey: OPENAI_KEY });
   openai = new OpenAIApi(config);
+  console.log("OpenAI configurado.");
+} else {
+  console.log("No hay OPENAI_API_KEY en .env");
 }
 
-// ✅ Crear tabla si no existe
+// Inicializar base de datos
 async function initDB() {
   const createTableQuery = `
     CREATE TABLE IF NOT EXISTS sols (
@@ -35,18 +38,20 @@ async function initDB() {
       raw_json TEXT
     );
   `;
-  const connection = await pool.getConnection();
-  await connection.query(createTableQuery);
-  connection.release();
-  console.log("✅ Tabla 'sols' lista en la base de datos.");
+
+  try {
+    const connection = await pool.getConnection();
+    await connection.query(createTableQuery);
+    connection.release();
+    console.log("Tabla 'sols' lista en la base de datos.");
+  } catch (error) {
+    console.error("Error al inicializar DB:", error);
+  }
 }
 
-initDB()
-  .then(() => console.log("✅ Base de datos inicializada"))
-  .catch(err => console.error("❌ Error al inicializar DB:", err));
+initDB();
 
-
-// ✅ Ruta 1: Descargar datos de la NASA y guardar
+// Ruta 1: Descargar datos de la NASA y guardar
 app.post('/api/fetch-nasa', async (req, res) => {
   try {
     const url = `https://api.nasa.gov/insight_weather/?api_key=${NASA_KEY}&feedtype=json&ver=1.0`;
@@ -106,7 +111,7 @@ app.post('/api/fetch-nasa', async (req, res) => {
   }
 });
 
-// ✅ Ruta 2: Obtener datos guardados
+// Ruta 2: Obtener datos guardados
 app.get('/api/data', async (req, res) => {
   try {
     const connection = await pool.getConnection();
@@ -123,7 +128,7 @@ app.get('/api/data', async (req, res) => {
   }
 });
 
-// ✅ Ruta 3: Preguntar a la IA
+// Ruta 3: Preguntar a la IA
 app.post('/api/ask', async (req, res) => {
   const { question } = req.body;
   if (!question) return res.status(400).json({ error: "Falta 'question'" });
@@ -176,11 +181,11 @@ Responde en español usando únicamente los datos provistos.
   }
 });
 
-// ✅ Ruta 4: Ping
+// Ruta 4: Ping
 app.get('/api/ping', (req, res) => {
   res.json({ ok: true });
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
