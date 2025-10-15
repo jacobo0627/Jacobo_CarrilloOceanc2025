@@ -1,9 +1,10 @@
 require('dotenv').config();
 const express = require('express');
 const fetch = require('node-fetch');
+const { GoogleGenAI } = require('@google/genai'); 
+const aiClient = new GoogleGenAI({}); 
 const cors = require('cors');
-const pool = require('../db');
-const { OpenAIApi, Configuration } = require('openai');
+const pool = require('./db');
 
 const app = express();
 app.use(cors());
@@ -12,17 +13,8 @@ app.use(express.static('public'));
 
 const PORT = process.env.PORT || 3000;
 const NASA_KEY = process.env.NASA_API_KEY || 'DEMO_KEY';
-const OPENAI_KEY = process.env.OPENAI_API_KEY || null;
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
-// Configurar OpenAI solo si hay clave
-let openai = null;
-if (OPENAI_KEY) {
-  const config = new Configuration({ apiKey: OPENAI_KEY });
-  openai = new OpenAIApi(config);
-  console.log("OpenAI configurado.");
-} else {
-  console.log("No hay OPENAI_API_KEY en .env");
-}
 
 // Inicializar base de datos
 async function initDB() {
@@ -49,7 +41,10 @@ async function initDB() {
   }
 }
 
-initDB();
+initDB()
+  .then(() => console.log(" Base de datos inicializada"))
+  .catch(err => console.error(" Error al inicializar DB:", err));
+  
 
 // Ruta 1: Descargar datos de la NASA y guardar
 app.post('/api/fetch-nasa', async (req, res) => {
@@ -129,20 +124,41 @@ app.get('/api/data', async (req, res) => {
 });
 
 // Ruta 3: Preguntar a la IA
+async function askGemini(prompt) {
+  try {
+    // Usamos gemini-2.5-flash: el modelo más eficiente y rápido para tareas de RAG
+    const response = await aiClient.models.generateContent({
+      model: 'gemini-2.5-flash', 
+      contents: prompt,
+    });
+
+    // El SDK devuelve el texto de la respuesta de manera limpia
+    return response.text; 
+    
+  } catch (error) {
+    // Si falla, el error será más claro en la consola, pero devolvemos null
+    console.error("Error conectando a Gemini (SDK):", error);
+    return null;
+  }
+}
+
 app.post('/api/ask', async (req, res) => {
   const { question } = req.body;
-  if (!question) return res.status(400).json({ error: "Falta 'question'" });
+
+  if (!question) {
+    return res.status(400).json({ error: "Falta 'question'" });
+  }
 
   try {
     const connection = await pool.getConnection();
-    const [rows] = await connection.query(`SELECT * FROM sols ORDER BY sol DESC`);
+        const [rows] = await connection.query(`SELECT * FROM sols ORDER BY sol DESC`);
     connection.release();
 
     if (!rows.length) {
       return res.status(400).json({ error: 'No hay datos guardados.' });
     }
 
-    const resumen = rows.slice(0, 10).map(r =>
+    const resumen = rows.map(r => 
       `Sol ${r.sol}: fecha=${r.date}, prom=${r.avg_temp}, min=${r.min_temp}, max=${r.max_temp}`
     ).join('\n');
 
@@ -155,31 +171,20 @@ Pregunta del usuario: "${question}"
 Responde en español usando únicamente los datos provistos.
 `;
 
-    if (!openai) {
-      return res.json({
-        answer: 'No se configuró OPENAI_API_KEY. Agrega tu clave para activar la IA.',
-        usedOpenAI: false
-      });
+    const respuesta = await askGemini(prompt);
+
+    if (respuesta) {
+      return res.json({ answer: respuesta, usedGemini: true });
+    } else {
+      return res.json({ answer: "No se pudo obtener respuesta de Gemini.", usedGemini: false });
     }
-
-    const completion = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: "Eres un asistente en español." },
-        { role: "user", content: prompt }
-      ],
-      max_tokens: 300,
-      temperature: 0.2
-    });
-
-    const respuesta = completion.data.choices[0].message.content.trim();
-    res.json({ answer: respuesta, usedOpenAI: true });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Error al conectar con IA" });
+    res.status(500).json({ error: "Error al procesar la solicitud" });
   }
 });
+
+
 
 // Ruta 4: Ping
 app.get('/api/ping', (req, res) => {

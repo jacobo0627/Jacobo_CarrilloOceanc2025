@@ -1,3 +1,5 @@
+const BACKEND_URL = 'http://localhost:3000'; 
+
 // Referencias a elementos del DOM
 const btnFetch = document.getElementById('btnFetch');
 const btnLoad = document.getElementById('btnLoad');
@@ -16,7 +18,8 @@ async function fetchNASA() {
   mostrarMensajeEnData('Descargando datos de la NASA...');
   
   try {
-    const res = await fetch('/api/fetch-nasa', { method: 'POST' });
+    // *** CORRECCIÓN DE LA URL ***
+    const res = await fetch(`${BACKEND_URL}/api/fetch-nasa`, { method: 'POST' });
     const j = await res.json();
     mostrarMensajeEnData(JSON.stringify(j, null, 2));
     await loadData();
@@ -33,7 +36,8 @@ async function fetchNASA() {
 async function loadData() {
   dataArea.innerHTML = 'Cargando...';
   try {
-    const res = await fetch('/api/data');
+    // *** CORRECCIÓN DE LA URL ***
+    const res = await fetch(`${BACKEND_URL}/api/data`);
     const j = await res.json();
 
     if (!j.sols || j.sols.length === 0) {
@@ -66,6 +70,7 @@ async function loadData() {
         <td>${formatear(r.avg_temp)}</td>
         <td>${formatear(r.min_temp)}</td>
         <td>${formatear(r.max_temp)}</td>
+        <td>${formatear(r.avg_temp)}</td>
         <td>${formatear(r.pressure)}</td>
         <td>${formatear(r.wind_speed)}</td>
       `;
@@ -92,7 +97,8 @@ askForm.addEventListener('submit', async (e) => {
   answerArea.textContent = 'Consultando IA...';
 
   try {
-    const res = await fetch('/api/ask', {
+    // *** CORRECCIÓN DE LA URL ***
+    const res = await fetch(`${BACKEND_URL}/api/ask`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ question: pregunta })
